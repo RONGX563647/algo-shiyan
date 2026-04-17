@@ -4,17 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>算法实验动画演示</title>
+    <link rel="stylesheet" href="common.css" />
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
       body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        padding: 20px;
+        background: linear-gradient(135deg, #ffb347 0%, #ff9f1c 100%);
+        padding-top: 80px;
       }
       .container {
         max-width: 1000px;
@@ -46,7 +40,7 @@
         color: #333;
         margin-bottom: 20px;
         padding-bottom: 10px;
-        border-bottom: 3px solid #667eea;
+        border-bottom: 3px solid #ffb347;
       }
       .experiment-grid {
         display: grid;
@@ -54,7 +48,7 @@
         gap: 20px;
       }
       .experiment-card {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: linear-gradient(135deg, #fff8f0 0%, #ffe4b5 100%);
         border-radius: 12px;
         padding: 25px;
         transition: all 0.3s ease;
@@ -64,7 +58,7 @@
       }
       .experiment-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 10px 30px rgba(255, 179, 71, 0.3);
       }
       .card-icon {
         font-size: 48px;
@@ -89,7 +83,7 @@
       }
       .tag {
         padding: 4px 12px;
-        background: #667eea;
+        background: #ffb347;
         color: white;
         border-radius: 15px;
         font-size: 12px;
@@ -100,9 +94,40 @@
         margin-top: 40px;
         opacity: 0.8;
       }
+      @media (max-width: 768px) {
+        body {
+          padding-top: 70px;
+        }
+        h1 {
+          font-size: 32px;
+        }
+        .section-title {
+          font-size: 22px;
+        }
+      }
     </style>
   </head>
   <body>
+    <nav class="top-nav">
+      <div class="quicklink-container" id="quicklinkContainer">
+        <a
+          href="https://barealgo.com/"
+          class="quicklink"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span class="quicklink-icon">🔗</span>
+          <span>BareAlgo</span>
+        </a>
+        <button
+          class="quicklink-cancel"
+          onclick="hideQuicklink()"
+          title="取消链接"
+        >
+          ×
+        </button>
+      </div>
+    </nav>
     <div class="container">
       <header>
         <h1>🧮 算法实验动画演示</h1>
@@ -200,5 +225,12 @@
         <p>© 2024 算法实验演示系统 | 点击卡片开始演示</p>
       </footer>
     </div>
+
+    <script>
+      function hideQuicklink() {
+        const container = document.getElementById("quicklinkContainer");
+        container.classList.add("quicklink-hidden");
+      }
+    </script>
   </body>
 </html>

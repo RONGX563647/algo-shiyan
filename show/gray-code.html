@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>实验二：格雷码生成 - 递归动画</title>
-    <link rel="stylesheet" href="common.css">
+    <link rel="stylesheet" href="common.css" />
     <style>
       body {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        background: linear-gradient(135deg, #ffb347 0%, #ff9f1c 100%);
       }
       .section-title {
-        border-bottom: 2px solid #4facfe;
+        border-bottom: 2px solid #ffb347;
       }
       .summary-section {
-        border-left: 5px solid #4facfe;
+        border-left: 5px solid #ffb347;
       }
       .status {
         text-align: center;
@@ -204,10 +204,16 @@
         </div>
       </div>
 
-      <a href="index.html" class="back-link">← 返回主页</a>
+      <a href="index.html" class="back-link" style="display: none"
+        >← 返回主页</a
+      >
     </div>
 
     <script>
+      function hideQuicklink() {
+        const container = document.getElementById("quicklinkContainer");
+        container.classList.add("quicklink-hidden");
+      }
       const javaCode = [
         {
           line: 1,
