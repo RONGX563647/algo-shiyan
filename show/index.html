@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>算法实验动画演示</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      header {
+        text-align: center;
+        color: white;
+        margin-bottom: 40px;
+      }
+      h1 {
+        font-size: 48px;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      .subtitle {
+        font-size: 20px;
+        opacity: 0.9;
+      }
+      .experiment-section {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      }
+      .section-title {
+        font-size: 28px;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #667eea;
+      }
+      .experiment-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+      .experiment-card {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 12px;
+        padding: 25px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+      }
+      .experiment-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+      .card-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+      }
+      .card-title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .card-desc {
+        font-size: 14px;
+        color: #666;
+        line-height: 1.6;
+      }
+      .card-tags {
+        margin-top: 15px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .tag {
+        padding: 4px 12px;
+        background: #667eea;
+        color: white;
+        border-radius: 15px;
+        font-size: 12px;
+      }
+      footer {
+        text-align: center;
+        color: white;
+        margin-top: 40px;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🧮 算法实验动画演示</h1>
+        <p class="subtitle">可视化展示算法运行过程，帮助理解算法原理</p>
+      </header>
+
+      <div class="experiment-section">
+        <h2 class="section-title">实验一：简单算法设计</h2>
+        <div class="experiment-grid">
+          <a href="set-partition.html" class="experiment-card">
+            <div class="card-icon">📊</div>
+            <div class="card-title">整数集合分解</div>
+            <div class="card-desc">
+              使用快速排序算法将整数集合排序后，分成两个子集，使两个子集的和尽可能接近。
+            </div>
+            <div class="card-tags">
+              <span class="tag">快速排序</span>
+              <span class="tag">分治思想</span>
+            </div>
+          </a>
+
+          <a href="equal-elements.html" class="experiment-card">
+            <div class="card-icon">🔍</div>
+            <div class="card-title">相等元素检测</div>
+            <div class="card-desc">
+              使用自定义HashSet（链地址法）检测数组中是否存在重复元素，展示哈希冲突处理过程。
+            </div>
+            <div class="card-tags">
+              <span class="tag">哈希表</span>
+              <span class="tag">链地址法</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="experiment-section">
+        <h2 class="section-title">实验二：递归算法设计与应用</h2>
+        <div class="experiment-grid">
+          <a href="chess-move.html" class="experiment-card">
+            <div class="card-icon">♞</div>
+            <div class="card-title">马踏棋盘</div>
+            <div class="card-desc">
+              使用回溯算法解决马踏棋盘问题，展示骑士遍历棋盘的完整路径。
+            </div>
+            <div class="card-tags">
+              <span class="tag">回溯算法</span>
+              <span class="tag">递归</span>
+            </div>
+          </a>
+
+          <a href="gray-code.html" class="experiment-card">
+            <div class="card-icon">🔢</div>
+            <div class="card-title">格雷码生成</div>
+            <div class="card-desc">
+              使用递归方法生成n位格雷码序列，展示格雷码的构造过程。
+            </div>
+            <div class="card-tags">
+              <span class="tag">递归</span>
+              <span class="tag">分治</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="experiment-section">
+        <h2 class="section-title">实验三：分治算法设计与应用</h2>
+        <div class="experiment-grid">
+          <a href="lshape-tiling.html" class="experiment-card">
+            <div class="card-icon">🧩</div>
+            <div class="card-title">L型组件填图</div>
+            <div class="card-desc">
+              使用分治法将L型条块覆盖棋盘，展示棋盘分割和递归填充过程。
+            </div>
+            <div class="card-tags">
+              <span class="tag">分治法</span>
+              <span class="tag">棋盘覆盖</span>
+            </div>
+          </a>
+
+          <a href="k-smallest.html" class="experiment-card">
+            <div class="card-icon">📊</div>
+            <div class="card-title">第1~k小元素</div>
+            <div class="card-desc">
+              使用快速选择算法在Θ(n)时间内找到前k个最小元素，展示分区和递归选择过程。
+            </div>
+            <div class="card-tags">
+              <span class="tag">快速选择</span>
+              <span class="tag">Θ(n)</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <footer>
+        <p>© 2024 算法实验演示系统 | 点击卡片开始演示</p>
+      </footer>
+    </div>
+  </body>
+</html>

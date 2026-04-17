@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实验三：第1~k小元素 - 快速选择算法演示</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .section-title {
+            border-bottom: 2px solid #11998e;
+        }
+        .summary-section {
+            border-left: 5px solid #11998e;
+        }
+        .array-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        .array-item {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            background: white;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+        .array-item.pivot {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-color: #f5576c;
+            transform: scale(1.1);
+        }
+        .array-item.less {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+            border-color: #38f9d7;
+        }
+        .array-item.greater {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            border-color: #fee140;
+        }
+        .array-item.target {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #764ba2;
+            transform: scale(1.15);
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.6);
+        }
+        .array-item.result {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border-color: #38ef7d;
+        }
+        .array-item.highlight {
+            animation: pulse 0.5s ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .partition-info {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            padding: 15px;
+            background: #fff3e0;
+            border-radius: 8px;
+        }
+        .partition-section {
+            flex: 1;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .partition-section.less-section {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+        }
+        .partition-section.greater-section {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+        .partition-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .partition-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .mini-item {
+            padding: 5px 10px;
+            background: white;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .step-info {
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2196f3;
+        }
+        .step-info-title {
+            font-weight: bold;
+            color: #1565c0;
+            margin-bottom: 5px;
+        }
+        .step-info-content {
+            color: #333;
+            font-size: 14px;
+        }
+        .result-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-radius: 10px;
+            border-left: 5px solid #4caf50;
+        }
+        .result-title {
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        .result-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .result-item {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .k-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .k-control label {
+            font-weight: bold;
+            color: #333;
+        }
+        .k-control input {
+            width: 60px;
+            padding: 5px;
+            border: 2px solid #11998e;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        .legend-text {
+            font-size: 12px;
+            color: #333;
+        }
+        .complexity-comparison {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .comparison-table th {
+            background: #11998e;
+            color: white;
+        }
+        .comparison-table td.highlight {
+            background: #e8f5e9;
+            font-weight: bold;
+        }
+    </style>
+    <script src="common.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>第1~k小元素问题</h1>
+        <p class="subtitle">快速选择算法可视化演示</p>
+
+        <div class="controls">
+            <div class="control-row">
+                <button class="btn-prev" onclick="prevStep()">⬅ 上一步</button>
+                <button class="btn-start" onclick="startAnimation()">▶ 开始演示</button>
+                <button class="btn-next" onclick="nextStep()">下一步 ➡</button>
+                <button class="btn-reset" onclick="resetAnimation()">🔄 重置</button>
+            </div>
+            <div class="control-row">
+                <div class="speed-control">
+                    <label>速度:</label>
+                    <input type="range" id="speedSlider" min="300" max="2000" value="800" />
+                    <span id="speedValue">800ms</span>
+                </div>
+                <div class="k-control">
+                    <label>查找前k小:</label>
+                    <input type="number" id="kInput" min="1" max="10" value="5" />
+                </div>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <div class="animation-section">
+                <div class="section-title">动画演示</div>
+                <div class="status" id="status">点击"开始演示"查看快速选择算法过程</div>
+                <div class="step-info" id="stepInfo" style="display: none;">
+                    <div class="step-info-title">当前步骤</div>
+                    <div class="step-info-content" id="stepContent"></div>
+                </div>
+                <div class="array-container" id="arrayContainer"></div>
+                <div class="partition-info" id="partitionInfo" style="display: none;">
+                    <div class="partition-section less-section">
+                        <div class="partition-title" style="color: #2e7d32;">≤ pivot (左分区)</div>
+                        <div class="partition-content" id="lessPartition"></div>
+                    </div>
+                    <div class="partition-section greater-section">
+                        <div class="partition-title" style="color: #c62828;">> pivot (右分区)</div>
+                        <div class="partition-content" id="greaterPartition"></div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                        <span class="legend-text">基准pivot</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);"></div>
+                        <span class="legend-text">≤ pivot</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"></div>
+                        <span class="legend-text">> pivot</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                        <span class="legend-text">第k小元素</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"></div>
+                        <span class="legend-text">前k小结果</span>
+                    </div>
+                </div>
+                <div class="result-section" id="resultSection" style="display: none;">
+                    <div class="result-title">前k小元素结果</div>
+                    <div class="result-items" id="resultItems"></div>
+                </div>
+            </div>
+
+            <div class="code-section">
+                <div class="section-title">Java代码</div>
+                <div class="code-container" id="codeContainer"></div>
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <div class="summary-title">算法原理小结</div>
+            <div class="summary-content">
+                <h4>快速选择算法原理</h4>
+                <p>快速选择是<strong>快速排序的变种</strong>：</p>
+                <ul>
+                    <li><strong>快速排序</strong>：递归处理两个分区</li>
+                    <li><strong>快速选择</strong>：只递归处理包含目标元素的一个分区</li>
+                </ul>
+
+                <h4>算法步骤</h4>
+                <ul>
+                    <li><strong>步骤1</strong>：选择基准元素（pivot）</li>
+                    <li><strong>步骤2</strong>：将数组分成两部分（≤pivot和>pivot）</li>
+                    <li><strong>步骤3</strong>：判断第k小元素在哪个分区</li>
+                    <li><strong>步骤4</strong>：只递归处理包含目标的分区</li>
+                    <li><strong>步骤5</strong>：找到第k小后，遍历收集所有≤第k小的元素</li>
+                </ul>
+
+                <h4>时间复杂度</h4>
+                <span class="complexity-box">平均: Θ(n)</span>
+                <span class="complexity-box">最坏: O(n²)</span>
+                <span class="complexity-box">改进: O(n)最坏</span>
+
+                <h4>方法对比</h4>
+                <div class="complexity-comparison">
+                    <table class="comparison-table">
+                        <tr>
+                            <th>方法</th>
+                            <th>时间复杂度</th>
+                            <th>是否满足</th>
+                        </tr>
+                        <tr>
+                            <td>排序法</td>
+                            <td>O(n log n)</td>
+                            <td>❌ 超出要求</td>
+                        </tr>
+                        <tr>
+                            <td>SELECT k次</td>
+                            <td>Θ(kn)</td>
+                            <td>❌ k接近n时O(n²)</td>
+                        </tr>
+                        <tr class="highlight">
+                            <td><strong>本方法</strong></td>
+                            <td><strong>Θ(n)</strong></td>
+                            <td>✓ 满足要求</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h4>核心思想</h4>
+                <p>前1~k小元素 = 所有小于等于第k小元素的元素</p>
+                <p>因为元素互不相同，恰好有k个元素≤第k小元素</p>
+            </div>
+        </div>
+
+        <a href="index.html" class="back-link">← 返回主页</a>
+    </div>
+
+    <script>
+        const javaCode = [
+            { line: 1, content: '<span class="keyword">private static int</span> <span class="method">quickSelectHelper</span>(<span class="type">int</span>[] arr,', highlight: false },
+            { line: 2, content: '                           <span class="type">int</span> left, <span class="type">int</span> right, <span class="type">int</span> k) {', highlight: false },
+            { line: 3, content: '', highlight: false },
+            { line: 4, content: '    <span class="comment">// 递归出口：只有一个元素</span>', highlight: false },
+            { line: 5, content: '    <span class="keyword">if</span> (left == right) <span class="keyword">return</span> arr[left];', highlight: false },
+            { line: 6, content: '', highlight: false },
+            { line: 7, content: '    <span class="comment">// 分区操作</span>', highlight: false },
+            { line: 8, content: '    <span class="type">int</span> pivotIndex = <span class="method">partition</span>(arr, left, right);', highlight: false },
+            { line: 9, content: '', highlight: false },
+            { line: 10, content: '    <span class="comment">// 判断目标位置</span>', highlight: false },
+            { line: 11, content: '    <span class="keyword">if</span> (k == pivotIndex) {', highlight: false },
+            { line: 12, content: '        <span class="keyword">return</span> arr[pivotIndex];  <span class="comment">// 找到目标</span>', highlight: false },
+            { line: 13, content: '    } <span class="keyword">else if</span> (k < pivotIndex) {', highlight: false },
+            { line: 14, content: '        <span class="keyword">return</span> <span class="method">quickSelectHelper</span>(arr, left, pivotIndex - <span class="number">1</span>, k);', highlight: false },
+            { line: 15, content: '    } <span class="keyword">else</span> {', highlight: false },
+            { line: 16, content: '        <span class="keyword">return</span> <span class="method">quickSelectHelper</span>(arr, pivotIndex + <span class="number">1</span>, right, k);', highlight: false },
+            { line: 17, content: '    }', highlight: false },
+            { line: 18, content: '}', highlight: false },
+            { line: 19, content: '', highlight: false },
+            { line: 20, content: '<span class="keyword">private static int</span> <span class="method">partition</span>(<span class="type">int</span>[] arr, <span class="type">int</span> left, <span class="type">int</span> right) {', highlight: false },
+            { line: 21, content: '    <span class="type">int</span> pivot = arr[right];  <span class="comment">// 选择最右元素作为基准</span>', highlight: false },
+            { line: 22, content: '    <span class="type">int</span> i = left - <span class="number">1</span>;', highlight: false },
+            { line: 23, content: '', highlight: false },
+            { line: 24, content: '    <span class="keyword">for</span> (<span class="type">int</span> j = left; j < right; j++) {', highlight: false },
+            { line: 25, content: '        <span class="keyword">if</span> (arr[j] <= pivot) {', highlight: false },
+            { line: 26, content: '            i++;', highlight: false },
+            { line: 27, content: '            <span class="method">swap</span>(arr, i, j);', highlight: false },
+            { line: 28, content: '        }', highlight: false },
+            { line: 29, content: '    }', highlight: false },
+            { line: 30, content: '', highlight: false },
+            { line: 31, content: '    <span class="method">swap</span>(arr, i + <span class="number">1</span>, right);', highlight: false },
+            { line: 32, content: '    <span class="keyword">return</span> i + <span class="number">1</span>;  <span class="comment">// 返回基准位置</span>', highlight: false },
+            { line: 33, content: '}', highlight: false },
+        ];
+
+        const originalArray = [56, 34, 22, 7, 16, 95, 46, 37, 81, 12, 73, 26, 19, 31, 68, 42, 3, 72, 51];
+        let currentArray = [];
+        let kValue = 5;
+        let animationSteps = [];
+        let currentStep = 0;
+        let isAnimating = false;
+        let animationTimer = null;
+        let kthSmallest = 0;
+
+        function initCodeDisplay() {
+            const container = document.getElementById('codeContainer');
+            container.innerHTML = javaCode.map(line => 
+                `<div class="code-line" id="line-${line.line}">
+                    <span class="line-number">${line.line}</span>
+                    <span class="line-content">${line.content}</span>
+                </div>`
+            ).join('');
+        }
+
+        function highlightCodeLines(lines) {
+            javaCode.forEach(lineObj => {
+                const lineEl = document.getElementById(`line-${lineObj.line}`);
+                if (lines.includes(lineObj.line)) {
+                    lineEl.classList.add('highlight');
+                } else {
+                    lineEl.classList.remove('highlight');
+                }
+            });
+        }
+
+        function initArray() {
+            currentArray = [...originalArray];
+            renderArray();
+        }
+
+        function renderArray(highlights = {}) {
+            const container = document.getElementById('arrayContainer');
+            container.innerHTML = '';
+            
+            currentArray.forEach((value, index) => {
+                const item = document.createElement('div');
+                item.className = 'array-item';
+                item.textContent = value;
+                
+                if (highlights.pivot === index) {
+                    item.classList.add('pivot');
+                } else if (highlights.less && highlights.less.includes(index)) {
+                    item.classList.add('less');
+                } else if (highlights.greater && highlights.greater.includes(index)) {
+                    item.classList.add('greater');
+                } else if (highlights.target === index) {
+                    item.classList.add('target');
+                } else if (highlights.result && highlights.result.includes(index)) {
+                    item.classList.add('result');
+                }
+                
+                if (highlights.highlight === index) {
+                    item.classList.add('highlight');
+                }
+                
+                container.appendChild(item);
+            });
+        }
+
+        function generateAnimationSteps() {
+            animationSteps = [];
+            currentArray = [...originalArray];
+            
+            animationSteps.push({
+                type: 'init',
+                message: `初始化：数组[${currentArray.slice(0, 8).join(', ')}...]，查找前${kValue}小元素`,
+                codeLines: [1, 2],
+                array: [...currentArray],
+                highlights: {}
+            });
+            
+            kthSmallest = quickSelectRecursive(0, currentArray.length - 1, kValue - 1, 0);
+            
+            animationSteps.push({
+                type: 'found',
+                message: `找到第${kValue}小元素：${kthSmallest}`,
+                codeLines: [12],
+                array: [...currentArray],
+                highlights: { target: currentArray.indexOf(kthSmallest) }
+            });
+            
+            const result = [];
+            originalArray.forEach(val => {
+                if (val <= kthSmallest) result.push(val);
+            });
+            result.sort((a, b) => a - b);
+            
+            animationSteps.push({
+                type: 'collect',
+                message: `收集所有≤${kthSmallest}的元素`,
+                codeLines: [],
+                array: [...currentArray],
+                result: result
+            });
+            
+            animationSteps.push({
+                type: 'complete',
+                message: `完成！前${kValue}小元素：[${result.join(', ')}]`,
+                codeLines: [],
+                array: [...currentArray],
+                result: result
+            });
+        }
+
+        function quickSelectRecursive(left, right, k, depth) {
+            if (left === right) {
+                animationSteps.push({
+                    type: 'base',
+                    depth: depth,
+                    message: `递归出口：只有一个元素，返回${currentArray[left]}`,
+                    codeLines: [5],
+                    array: [...currentArray],
+                    highlights: { target: left },
+                    left: left,
+                    right: right
+                });
+                return currentArray[left];
+            }
+            
+            const pivot = currentArray[right];
+            animationSteps.push({
+                type: 'select_pivot',
+                depth: depth,
+                message: `选择基准：pivot = ${pivot}（位置${right}）`,
+                codeLines: [21],
+                array: [...currentArray],
+                highlights: { pivot: right },
+                left: left,
+                right: right
+            });
+            
+            const pivotIndex = partition(left, right);
+            
+            animationSteps.push({
+                type: 'partition_done',
+                depth: depth,
+                message: `分区完成：pivot ${pivot} 最终位置${pivotIndex}`,
+                codeLines: [32],
+                array: [...currentArray],
+                highlights: { pivot: pivotIndex },
+                left: left,
+                right: right,
+                pivotIndex: pivotIndex
+            });
+            
+            if (k === pivotIndex) {
+                animationSteps.push({
+                    type: 'found_k',
+                    depth: depth,
+                    message: `找到目标！第${k+1}小元素 = ${currentArray[pivotIndex]}`,
+                    codeLines: [11, 12],
+                    array: [...currentArray],
+                    highlights: { target: pivotIndex }
+                });
+                return currentArray[pivotIndex];
+            } else if (k < pivotIndex) {
+                animationSteps.push({
+                    type: 'recurse_left',
+                    depth: depth,
+                    message: `目标在左分区：k=${k} < pivotIndex=${pivotIndex}`,
+                    codeLines: [13, 14],
+                    array: [...currentArray],
+                    highlights: { less: Array.from({length: pivotIndex}, (_, i) => left + i) },
+                    left: left,
+                    right: pivotIndex - 1
+                });
+                return quickSelectRecursive(left, pivotIndex - 1, k, depth + 1);
+            } else {
+                animationSteps.push({
+                    type: 'recurse_right',
+                    depth: depth,
+                    message: `目标在右分区：k=${k} > pivotIndex=${pivotIndex}`,
+                    codeLines: [15, 16],
+                    array: [...currentArray],
+                    highlights: { greater: Array.from({length: right - pivotIndex}, (_, i) => pivotIndex + 1 + i) },
+                    left: pivotIndex + 1,
+                    right: right
+                });
+                return quickSelectRecursive(pivotIndex + 1, right, k, depth + 1);
+            }
+        }
+
+        function partition(left, right) {
+            const pivot = currentArray[right];
+            let i = left - 1;
+            
+            for (let j = left; j < right; j++) {
+                if (currentArray[j] <= pivot) {
+                    i++;
+                    [currentArray[i], currentArray[j]] = [currentArray[j], currentArray[i]];
+                }
+            }
+            
+            [currentArray[i + 1], currentArray[right]] = [currentArray[right], currentArray[i + 1]];
+            return i + 1;
+        }
+
+        function showStep(step) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = step.message;
+            
+            const stepInfoEl = document.getElementById('stepInfo');
+            const stepContentEl = document.getElementById('stepContent');
+            
+            if (step.type === 'select_pivot' || step.type === 'partition_done') {
+                stepInfoEl.style.display = 'block';
+                stepContentEl.innerHTML = `
+                    <strong>分区操作</strong><br>
+                    范围：[${step.left}, ${step.right}]<br>
+                    基准：${step.array[step.right]}<br>
+                    递归深度：${step.depth}
+                `;
+            } else if (step.type === 'recurse_left' || step.type === 'recurse_right') {
+                stepInfoEl.style.display = 'block';
+                stepContentEl.innerHTML = `
+                    <strong>递归选择</strong><br>
+                    方向：${step.type === 'recurse_left' ? '左分区' : '右分区'}<br>
+                    新范围：[${step.left}, ${step.right}]<br>
+                    递归深度：${step.depth}
+                `;
+            } else {
+                stepInfoEl.style.display = 'none';
+            }
+            
+            highlightCodeLines(step.codeLines || []);
+            
+            currentArray = [...step.array];
+            renderArray(step.highlights || {});
+            
+            const partitionInfoEl = document.getElementById('partitionInfo');
+            if (step.highlights && (step.highlights.less || step.highlights.greater)) {
+                partitionInfoEl.style.display = 'flex';
+                
+                const lessPartitionEl = document.getElementById('lessPartition');
+                const greaterPartitionEl = document.getElementById('greaterPartition');
+                
+                if (step.highlights.less) {
+                    lessPartitionEl.innerHTML = step.highlights.less.map(i => 
+                        `<span class="mini-item">${currentArray[i]}</span>`
+                    ).join('');
+                } else {
+                    lessPartitionEl.innerHTML = '';
+                }
+                
+                if (step.highlights.greater) {
+                    greaterPartitionEl.innerHTML = step.highlights.greater.map(i => 
+                        `<span class="mini-item">${currentArray[i]}</span>`
+                    ).join('');
+                } else {
+                    greaterPartitionEl.innerHTML = '';
+                }
+            } else {
+                partitionInfoEl.style.display = 'none';
+            }
+            
+            const resultSectionEl = document.getElementById('resultSection');
+            const resultItemsEl = document.getElementById('resultItems');
+            
+            if (step.result) {
+                resultSectionEl.style.display = 'block';
+                resultItemsEl.innerHTML = step.result.map(val => 
+                    `<span class="result-item">${val}</span>`
+                ).join('');
+            } else {
+                resultSectionEl.style.display = 'none';
+            }
+        }
+
+        function startAnimation() {
+            if (isAnimating) {
+                isAnimating = false;
+                clearTimeout(animationTimer);
+                return;
+            }
+            
+            kValue = parseInt(document.getElementById('kInput').value) || 5;
+            if (kValue > originalArray.length) kValue = originalArray.length;
+            if (kValue < 1) kValue = 1;
+            
+            if (currentStep === 0 || currentStep >= animationSteps.length) {
+                resetAnimation();
+                generateAnimationSteps();
+            }
+            
+            isAnimating = true;
+            animate();
+        }
+
+        function animate() {
+            if (!isAnimating || currentStep >= animationSteps.length) {
+                isAnimating = false;
+                return;
+            }
+            
+            showStep(animationSteps[currentStep]);
+            currentStep++;
+            
+            const speed = document.getElementById('speedSlider').value;
+            animationTimer = setTimeout(animate, parseInt(speed));
+        }
+
+        function prevStep() {
+            kValue = parseInt(document.getElementById('kInput').value) || 5;
+            
+            if (animationSteps.length === 0) {
+                generateAnimationSteps();
+            }
+            
+            if (currentStep > 0) {
+                currentStep--;
+                showStep(animationSteps[currentStep]);
+            }
+        }
+
+        function nextStep() {
+            kValue = parseInt(document.getElementById('kInput').value) || 5;
+            
+            if (animationSteps.length === 0) {
+                generateAnimationSteps();
+            }
+            
+            if (currentStep < animationSteps.length) {
+                showStep(animationSteps[currentStep]);
+                currentStep++;
+            }
+        }
+
+        function updateSpeedDisplay() {
+            const slider = document.getElementById('speedSlider');
+            const display = document.getElementById('speedValue');
+            display.textContent = slider.value + 'ms';
+        }
+
+        function resetAnimation() {
+            isAnimating = false;
+            clearTimeout(animationTimer);
+            currentStep = 0;
+            animationSteps = [];
+            currentArray = [...originalArray];
+            document.getElementById('status').textContent = '点击"开始演示"查看快速选择算法过程';
+            document.getElementById('stepInfo').style.display = 'none';
+            document.getElementById('partitionInfo').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'none';
+            highlightCodeLines([]);
+            renderArray();
+        }
+
+        document.getElementById('speedSlider').addEventListener('input', updateSpeedDisplay);
+        document.getElementById('kInput').addEventListener('change', resetAnimation);
+        
+        initCodeDisplay();
+        initArray();
+    </script>
+</body>
+</html>

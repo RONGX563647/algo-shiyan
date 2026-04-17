@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实验三：L型组件填图 - 分治算法演示</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .section-title {
+            border-bottom: 2px solid #667eea;
+        }
+        .summary-section {
+            border-left: 5px solid #667eea;
+        }
+        .board-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .board {
+            display: grid;
+            gap: 2px;
+            background: #333;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .cell.special {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            font-size: 20px;
+        }
+        .cell.highlight {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.8);
+        }
+        .cell.new-tile {
+            animation: pulse 0.5s ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .tile-colors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .tile-color {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: white;
+        }
+        .size-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .size-control label {
+            font-weight: bold;
+            color: #333;
+        }
+        .size-control select {
+            padding: 8px 12px;
+            font-size: 16px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+        }
+        .special-pos {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .special-pos label {
+            font-weight: bold;
+            color: #333;
+        }
+        .special-pos input {
+            width: 60px;
+            padding: 5px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .step-info {
+            padding: 15px;
+            background: #fff3e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ff9800;
+        }
+        .step-info-title {
+            font-weight: bold;
+            color: #e65100;
+            margin-bottom: 5px;
+        }
+        .step-info-content {
+            color: #333;
+            font-size: 14px;
+        }
+        .sub-board-indicator {
+            position: absolute;
+            border: 3px dashed #667eea;
+            border-radius: 5px;
+            pointer-events: none;
+        }
+        .board-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        .legend-text {
+            font-size: 12px;
+            color: #333;
+        }
+    </style>
+    <script src="common.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>L型组件填图问题</h1>
+        <p class="subtitle">分治算法可视化演示</p>
+
+        <div class="controls">
+            <div class="control-row">
+                <button class="btn-prev" onclick="prevStep()">⬅ 上一步</button>
+                <button class="btn-start" onclick="startAnimation()">▶ 开始演示</button>
+                <button class="btn-next" onclick="nextStep()">下一步 ➡</button>
+                <button class="btn-reset" onclick="resetAnimation()">🔄 重置</button>
+            </div>
+            <div class="control-row">
+                <div class="speed-control">
+                    <label>速度:</label>
+                    <input type="range" id="speedSlider" min="200" max="2000" value="800" />
+                    <span id="speedValue">800ms</span>
+                </div>
+                <div class="size-control">
+                    <label>棋盘大小:</label>
+                    <select id="sizeSelect">
+                        <option value="2">2×2</option>
+                        <option value="4">4×4</option>
+                        <option value="8" selected>8×8</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="special-pos">
+                    <label>特殊方格位置:</label>
+                    <input type="number" id="specialRow" min="0" max="7" value="0" placeholder="行" />
+                    <input type="number" id="specialCol" min="0" max="7" value="0" placeholder="列" />
+                </div>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <div class="animation-section">
+                <div class="section-title">动画演示</div>
+                <div class="status" id="status">点击"开始演示"查看L型组件填图过程</div>
+                <div class="step-info" id="stepInfo" style="display: none;">
+                    <div class="step-info-title">当前步骤</div>
+                    <div class="step-info-content" id="stepContent"></div>
+                </div>
+                <div class="board-container">
+                    <div class="board-wrapper">
+                        <div class="board" id="board"></div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                        <span class="legend-text">特殊方格</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #667eea;"></div>
+                        <span class="legend-text">当前L型条块</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #f5f5f5; border: 1px solid #333;"></div>
+                        <span class="legend-text">未填充</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-section">
+                <div class="section-title">Java代码</div>
+                <div class="code-container" id="codeContainer"></div>
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <div class="summary-title">算法原理小结</div>
+            <div class="summary-content">
+                <h4>分治策略核心</h4>
+                <p>L型组件填图采用<strong>分治法</strong>解决：</p>
+                <ul>
+                    <li><strong>分解</strong>：将2^k × 2^k棋盘分成4个2^(k-1) × 2^(k-1)子棋盘</li>
+                    <li><strong>处理</strong>：用一个L型条块覆盖3个不含特殊方格的子棋盘中心交汇处</li>
+                    <li><strong>递归</strong>：对4个子棋盘分别递归处理</li>
+                    <li><strong>递归出口</strong>：棋盘大小为1时无需处理</li>
+                </ul>
+
+                <h4>L型条块覆盖原理</h4>
+                <p>特殊方格必在其中一个子棋盘，其他3个子棋盘的中心交汇处恰好形成L形，用一个L型条块覆盖后，每个子棋盘都有了"特殊方格"。</p>
+
+                <h4>时间复杂度</h4>
+                <span class="complexity-box">时间: O(n²)</span>
+                <span class="complexity-box">空间: O(n²)</span>
+
+                <h4>L型条块数量</h4>
+                <p>棋盘大小为n=2^k时，需要L型条块数量：(n²-1)/3 = (4^k-1)/3</p>
+                <ul>
+                    <li>n=2时需要1个</li>
+                    <li>n=4时需要5个</li>
+                    <li>n=8时需要21个</li>
+                </ul>
+            </div>
+        </div>
+
+        <a href="index.html" class="back-link">← 返回主页</a>
+    </div>
+
+    <script>
+        const javaCode = [
+            { line: 1, content: '<span class="keyword">private void</span> <span class="method">tileBoard</span>(<span class="type">int</span> topRow, <span class="type">int</span> topCol, <span class="type">int</span> size,', highlight: false },
+            { line: 2, content: '                           <span class="type">int</span> specialRow, <span class="type">int</span> specialCol) {', highlight: false },
+            { line: 3, content: '', highlight: false },
+            { line: 4, content: '    <span class="comment">// 递归出口：棋盘大小为1时无需处理</span>', highlight: false },
+            { line: 5, content: '    <span class="keyword">if</span> (size == <span class="number">1</span>) <span class="keyword">return</span>;', highlight: false },
+            { line: 6, content: '', highlight: false },
+            { line: 7, content: '    <span class="comment">// 分解：将棋盘分成4个子棋盘</span>', highlight: false },
+            { line: 8, content: '    <span class="type">int</span> half = size / <span class="number">2</span>;', highlight: false },
+            { line: 9, content: '    <span class="type">int</span> currentTile = tileCount++;', highlight: false },
+            { line: 10, content: '', highlight: false },
+            { line: 11, content: '    <span class="comment">// 判断特殊方格所在子棋盘</span>', highlight: false },
+            { line: 12, content: '    <span class="keyword">if</span> (specialRow < topRow + half && specialCol < topCol + half) {', highlight: false },
+            { line: 13, content: '        <span class="comment">// 特殊方格在左上子棋盘</span>', highlight: false },
+            { line: 14, content: '        board[topRow + half - <span class="number">1</span>][topCol + half] = currentTile;', highlight: false },
+            { line: 15, content: '        board[topRow + half][topCol + half - <span class="number">1</span>] = currentTile;', highlight: false },
+            { line: 16, content: '        board[topRow + half][topCol + half] = currentTile;', highlight: false },
+            { line: 17, content: '', highlight: false },
+            { line: 18, content: '        <span class="comment">// 递归处理4个子棋盘</span>', highlight: false },
+            { line: 19, content: '        <span class="method">tileBoard</span>(topRow, topCol, half, specialRow, specialCol);', highlight: false },
+            { line: 20, content: '        <span class="method">tileBoard</span>(topRow, topCol + half, half, ...);', highlight: false },
+            { line: 21, content: '        <span class="method">tileBoard</span>(topRow + half, topCol, half, ...);', highlight: false },
+            { line: 22, content: '        <span class="method">tileBoard</span>(topRow + half, topCol + half, half, ...);', highlight: false },
+            { line: 23, content: '    }', highlight: false },
+            { line: 24, content: '    <span class="comment">// 其他3种情况类似处理...</span>', highlight: false },
+            { line: 25, content: '}', highlight: false },
+        ];
+
+        let boardSize = 8;
+        let specialRowPos = 0;
+        let specialColPos = 0;
+        let board = [];
+        let tileCount = 1;
+        let animationSteps = [];
+        let currentStep = 0;
+        let isAnimating = false;
+        let animationTimer = null;
+
+        const tileColors = [
+            '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe',
+            '#43e97b', '#38f9d7', '#fa709a', '#fee140', '#a8edea', '#fed6e3',
+            '#ff9a9e', '#fecfef', '#ffecd2', '#fcb69f', '#a1c4fd', '#c2e9fb',
+            '#d4fc79', '#96e6a1', '#84fab0', '#8fd3f4', '#ff6b6b', '#feca57',
+            '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43'
+        ];
+
+        function initCodeDisplay() {
+            const container = document.getElementById('codeContainer');
+            container.innerHTML = javaCode.map(line => 
+                `<div class="code-line" id="line-${line.line}">
+                    <span class="line-number">${line.line}</span>
+                    <span class="line-content">${line.content}</span>
+                </div>`
+            ).join('');
+        }
+
+        function highlightCodeLines(lines) {
+            javaCode.forEach(lineObj => {
+                const lineEl = document.getElementById(`line-${lineObj.line}`);
+                if (lines.includes(lineObj.line)) {
+                    lineEl.classList.add('highlight');
+                } else {
+                    lineEl.classList.remove('highlight');
+                }
+            });
+        }
+
+        function getTileColor(tileNum) {
+            if (tileNum === 0) return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+            return tileColors[(tileNum - 1) % tileColors.length];
+        }
+
+        function initBoard() {
+            board = [];
+            for (let i = 0; i < boardSize; i++) {
+                board[i] = [];
+                for (let j = 0; j < boardSize; j++) {
+                    board[i][j] = 0;
+                }
+            }
+            board[specialRowPos][specialColPos] = -1;
+            tileCount = 1;
+            renderBoard();
+        }
+
+        function renderBoard(highlightCells = [], newTileCells = []) {
+            const boardEl = document.getElementById('board');
+            boardEl.style.gridTemplateColumns = `repeat(${boardSize}, 50px)`;
+            boardEl.innerHTML = '';
+            
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    const value = board[i][j];
+                    if (value === -1) {
+                        cell.classList.add('special');
+                        cell.textContent = 'A';
+                    } else if (value > 0) {
+                        cell.style.background = getTileColor(value);
+                        cell.style.color = 'white';
+                        cell.textContent = value;
+                    } else {
+                        cell.textContent = '';
+                    }
+                    
+                    if (highlightCells.some(c => c.row === i && c.col === j)) {
+                        cell.classList.add('highlight');
+                    }
+                    if (newTileCells.some(c => c.row === i && c.col === j)) {
+                        cell.classList.add('new-tile');
+                    }
+                    
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function generateAnimationSteps() {
+            animationSteps = [];
+            tileCount = 1;
+            
+            animationSteps.push({
+                type: 'init',
+                message: `初始化：${boardSize}×${boardSize}棋盘，特殊方格在(${specialRowPos}, ${specialColPos})`,
+                codeLines: [1, 2],
+                boardState: JSON.parse(JSON.stringify(board))
+            });
+            
+            generateRecursiveSteps(0, 0, boardSize, specialRowPos, specialColPos, 0);
+            
+            animationSteps.push({
+                type: 'complete',
+                message: `完成！共使用${tileCount - 1}个L型条块覆盖棋盘`,
+                codeLines: [],
+                boardState: JSON.parse(JSON.stringify(board))
+            });
+        }
+
+        function generateRecursiveSteps(topRow, topCol, size, specialRow, specialCol, depth) {
+            if (size === 1) {
+                animationSteps.push({
+                    type: 'base',
+                    depth: depth,
+                    message: `递归出口：子棋盘[${topRow},${topCol}]大小为1，无需处理`,
+                    codeLines: [5],
+                    boardState: JSON.parse(JSON.stringify(board))
+                });
+                return;
+            }
+
+            const half = size / 2;
+            const currentTile = tileCount++;
+            
+            animationSteps.push({
+                type: 'divide',
+                depth: depth,
+                message: `分解：将子棋盘[${topRow},${topCol}](${size}×${size})分成4个${half}×${half}子棋盘`,
+                codeLines: [7, 8, 9],
+                boardState: JSON.parse(JSON.stringify(board)),
+                topRow: topRow,
+                topCol: topCol,
+                size: size
+            });
+
+            let lCells = [];
+            
+            if (specialRow < topRow + half && specialCol < topCol + half) {
+                lCells = [
+                    { row: topRow + half - 1, col: topCol + half },
+                    { row: topRow + half, col: topCol + half - 1 },
+                    { row: topRow + half, col: topCol + half }
+                ];
+                animationSteps.push({
+                    type: 'cover',
+                    depth: depth,
+                    tile: currentTile,
+                    cells: lCells,
+                    message: `L型条块${currentTile}覆盖：特殊方格在左上，覆盖其他3个子棋盘中心`,
+                    codeLines: [12, 13, 14, 15, 16],
+                    boardState: JSON.parse(JSON.stringify(board))
+                });
+                
+                lCells.forEach(c => board[c.row][c.col] = currentTile);
+                
+                animationSteps.push({
+                    type: 'placed',
+                    depth: depth,
+                    tile: currentTile,
+                    cells: lCells,
+                    message: `L型条块${currentTile}已放置`,
+                    codeLines: [],
+                    boardState: JSON.parse(JSON.stringify(board)),
+                    newCells: lCells
+                });
+                
+                generateRecursiveSteps(topRow, topCol, half, specialRow, specialCol, depth + 1);
+                generateRecursiveSteps(topRow, topCol + half, half, topRow + half - 1, topCol + half, depth + 1);
+                generateRecursiveSteps(topRow + half, topCol, half, topRow + half, topCol + half - 1, depth + 1);
+                generateRecursiveSteps(topRow + half, topCol + half, half, topRow + half, topCol + half, depth + 1);
+            } else if (specialRow < topRow + half && specialCol >= topCol + half) {
+                lCells = [
+                    { row: topRow + half - 1, col: topCol + half - 1 },
+                    { row: topRow + half, col: topCol + half - 1 },
+                    { row: topRow + half, col: topCol + half }
+                ];
+                animationSteps.push({
+                    type: 'cover',
+                    depth: depth,
+                    tile: currentTile,
+                    cells: lCells,
+                    message: `L型条块${currentTile}覆盖：特殊方格在右上，覆盖其他3个子棋盘中心`,
+                    codeLines: [12],
+                    boardState: JSON.parse(JSON.stringify(board))
+                });
+                
+                lCells.forEach(c => board[c.row][c.col] = currentTile);
+                
+                animationSteps.push({
+                    type: 'placed',
+                    depth: depth,
+                    tile: currentTile,
+                    cells: lCells,
+                    message: `L型条块${currentTile}已放置`,
+                    codeLines: [],
+                    boardState: JSON.parse(JSON.stringify(board)),
+                    newCells: lCells
+                });
+                
+                generateRecursiveSteps(topRow, topCol, half, topRow + half - 1, topCol + half - 1, depth + 1);
+                generateRecursiveSteps(topRow, topCol + half, half, specialRow, specialCol, depth + 1);
+                generateRecursiveSteps(topRow + half, topCol, half, topRow + half, topCol + half - 1, depth + 1);
+                generateRecursiveSteps(topRow + half, topCol + half, half, topRow + half, topCol + half, depth + 1);
+            } else if (specialRow >= topRow + half && specialCol < topCol + half) {
+                lCells = [
+                    { row: topRow + half - 1, col: topCol + half - 1 },
+                    { row: topRow + half - 1, col: topCol + half },
+                    { row: topRow + half, col: topCol + half }
+                ];
+                animationSteps.push({
+                    type: 'cover',
+                    depth: depth,
+                    tile: currentTile,
+                    cells: lCells,
+                    message: `L型条块${currentTile}覆盖：特殊方格在左下，覆盖其他3个子棋盘中心`,
+                    codeLines: [12],
+                    boardState: JSON.parse(JSON.stringify(board))
+                });
+                
+                lCells.forEach(c => board[c.row][c.col] = currentTile);
+                
+                animationSteps.push({
+                    type: 'placed',
+                    depth: depth,
+                    tile: currentTile,
+                    cells: lCells,
+                    message: `L型条块${currentTile}已放置`,
+                    codeLines: [],
+                    boardState: JSON.parse(JSON.stringify(board)),
+                    newCells: lCells
+                });
+                
+                generateRecursiveSteps(topRow, topCol, half, topRow + half - 1, topCol + half - 1, depth + 1);
+                generateRecursiveSteps(topRow, topCol + half, half, topRow + half - 1, topCol + half, depth + 1);
+                generateRecursiveSteps(topRow + half, topCol, half, specialRow, specialCol, depth + 1);
+                generateRecursiveSteps(topRow + half, topCol + half, half, topRow + half, topCol + half, depth + 1);
+            } else {
+                lCells = [
+                    { row: topRow + half - 1, col: topCol + half - 1 },
+                    { row: topRow + half - 1, col: topCol + half },
+                    { row: topRow + half, col: topCol + half - 1 }
+                ];
+                animationSteps.push({
+                    type: 'cover',
+                    depth: depth,
+                    tile: currentTile,
+                    cells: lCells,
+                    message: `L型条块${currentTile}覆盖：特殊方格在右下，覆盖其他3个子棋盘中心`,
+                    codeLines: [12],
+                    boardState: JSON.parse(JSON.stringify(board))
+                });
+                
+                lCells.forEach(c => board[c.row][c.col] = currentTile);
+                
+                animationSteps.push({
+                    type: 'placed',
+                    depth: depth,
+                    tile: currentTile,
+                    cells: lCells,
+                    message: `L型条块${currentTile}已放置`,
+                    codeLines: [],
+                    boardState: JSON.parse(JSON.stringify(board)),
+                    newCells: lCells
+                });
+                
+                generateRecursiveSteps(topRow, topCol, half, topRow + half - 1, topCol + half - 1, depth + 1);
+                generateRecursiveSteps(topRow, topCol + half, half, topRow + half - 1, topCol + half, depth + 1);
+                generateRecursiveSteps(topRow + half, topCol, half, topRow + half, topCol + half - 1, depth + 1);
+                generateRecursiveSteps(topRow + half, topCol + half, half, specialRow, specialCol, depth + 1);
+            }
+        }
+
+        function showStep(step) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = step.message;
+            
+            const stepInfoEl = document.getElementById('stepInfo');
+            const stepContentEl = document.getElementById('stepContent');
+            
+            if (step.type === 'cover' || step.type === 'placed') {
+                stepInfoEl.style.display = 'block';
+                stepContentEl.innerHTML = `
+                    <strong>L型条块 #${step.tile}</strong><br>
+                    覆盖位置：(${step.cells.map(c => `(${c.row},${c.col})`).join(', ')})<br>
+                    递归深度：${step.depth}
+                `;
+            } else if (step.type === 'divide') {
+                stepInfoEl.style.display = 'block';
+                stepContentEl.innerHTML = `
+                    <strong>棋盘分割</strong><br>
+                    位置：[${step.topRow},${step.topCol}]<br>
+                    大小：${step.size}×${step.size} → 4个${step.size/2}×${step.size/2}子棋盘<br>
+                    递归深度：${step.depth}
+                `;
+            } else {
+                stepInfoEl.style.display = 'none';
+            }
+            
+            highlightCodeLines(step.codeLines || []);
+            
+            board = JSON.parse(JSON.stringify(step.boardState));
+            
+            if (step.type === 'cover') {
+                renderBoard(step.cells, []);
+            } else if (step.type === 'placed') {
+                renderBoard([], step.newCells || []);
+            } else {
+                renderBoard();
+            }
+        }
+
+        function startAnimation() {
+            if (isAnimating) {
+                isAnimating = false;
+                clearTimeout(animationTimer);
+                return;
+            }
+            
+            boardSize = parseInt(document.getElementById('sizeSelect').value);
+            specialRowPos = parseInt(document.getElementById('specialRow').value) || 0;
+            specialColPos = parseInt(document.getElementById('specialCol').value) || 0;
+            
+            if (specialRowPos >= boardSize) specialRowPos = 0;
+            if (specialColPos >= boardSize) specialColPos = 0;
+            
+            document.getElementById('specialRow').max = boardSize - 1;
+            document.getElementById('specialCol').max = boardSize - 1;
+            
+            if (currentStep === 0 || currentStep >= animationSteps.length) {
+                resetAnimation();
+                initBoard();
+                generateAnimationSteps();
+            }
+            
+            isAnimating = true;
+            animate();
+        }
+
+        function animate() {
+            if (!isAnimating || currentStep >= animationSteps.length) {
+                isAnimating = false;
+                return;
+            }
+            
+            showStep(animationSteps[currentStep]);
+            currentStep++;
+            
+            const speed = document.getElementById('speedSlider').value;
+            animationTimer = setTimeout(animate, parseInt(speed));
+        }
+
+        function prevStep() {
+            boardSize = parseInt(document.getElementById('sizeSelect').value);
+            specialRowPos = parseInt(document.getElementById('specialRow').value) || 0;
+            specialColPos = parseInt(document.getElementById('specialCol').value) || 0;
+            
+            if (animationSteps.length === 0) {
+                initBoard();
+                generateAnimationSteps();
+            }
+            
+            if (currentStep > 0) {
+                currentStep--;
+                showStep(animationSteps[currentStep]);
+            }
+        }
+
+        function nextStep() {
+            boardSize = parseInt(document.getElementById('sizeSelect').value);
+            specialRowPos = parseInt(document.getElementById('specialRow').value) || 0;
+            specialColPos = parseInt(document.getElementById('specialCol').value) || 0;
+            
+            if (animationSteps.length === 0) {
+                initBoard();
+                generateAnimationSteps();
+            }
+            
+            if (currentStep < animationSteps.length) {
+                showStep(animationSteps[currentStep]);
+                currentStep++;
+            }
+        }
+
+        function updateSpeedDisplay() {
+            const slider = document.getElementById('speedSlider');
+            const display = document.getElementById('speedValue');
+            display.textContent = slider.value + 'ms';
+        }
+
+        function resetAnimation() {
+            isAnimating = false;
+            clearTimeout(animationTimer);
+            currentStep = 0;
+            animationSteps = [];
+            document.getElementById('status').textContent = '点击"开始演示"查看L型组件填图过程';
+            document.getElementById('stepInfo').style.display = 'none';
+            highlightCodeLines([]);
+            initBoard();
+        }
+
+        document.getElementById('speedSlider').addEventListener('input', updateSpeedDisplay);
+        document.getElementById('sizeSelect').addEventListener('change', resetAnimation);
+        
+        initCodeDisplay();
+        initBoard();
+    </script>
+</body>
+</html>

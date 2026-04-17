@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实验二：棋子移动游戏 - BFS动画</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+      body {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      }
+      .section-title {
+        border-bottom: 2px solid #f5576c;
+      }
+      .summary-section {
+        border-left: 5px solid #f5576c;
+      }
+      .status {
+        text-align: center;
+        padding: 12px;
+        background: #e8f5e9;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-weight: bold;
+        color: #2e7d32;
+        font-size: 14px;
+      }
+      .board-container {
+        padding: 20px;
+        background: #f5f5f5;
+        border-radius: 10px;
+        margin-bottom: 15px;
+      }
+      .board {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 15px;
+      }
+      .cell {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 20px;
+        transition: all 0.3s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .cell.white {
+        background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+        color: #333;
+        border: 2px solid #ddd;
+      }
+      .cell.black {
+        background: linear-gradient(135deg, #333 0%, #555 100%);
+        color: white;
+        border: 2px solid #222;
+      }
+      .cell.empty {
+        background: linear-gradient(135deg, #e0e0e0 0%, #c0c0c0 100%);
+        color: #999;
+        border: 2px solid #bbb;
+      }
+      .cell.moving {
+        animation: pulse 0.5s ease-in-out infinite;
+        transform: scale(1.1);
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.15);
+        }
+      }
+      .step-info {
+        text-align: center;
+        padding: 10px;
+        background: #fff3e0;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #e65100;
+      }
+      .path-display {
+        margin-top: 15px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 8px;
+      }
+      .path-title {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+      }
+      .path-steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .path-step {
+        padding: 8px 12px;
+        background: #f5576c;
+        color: white;
+        border-radius: 5px;
+        font-size: 12px;
+      }
+      .path-step.current {
+        background: #f093fb;
+        transform: scale(1.1);
+      }
+    </style>
+    <script src="common.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>棋子移动游戏</h1>
+      <p class="subtitle">BFS求解最短路径可视化演示</p>
+
+      <div class="controls">
+        <div class="control-row">
+          <button class="btn-prev" onclick="prevStep()">⬅ 上一步</button>
+          <button class="btn-start" onclick="startAnimation()">
+            ▶ 开始演示
+          </button>
+          <button class="btn-next" onclick="nextStep()">下一步 ➡</button>
+          <button class="btn-reset" onclick="resetAnimation()">🔄 重置</button>
+        </div>
+        <div class="control-row">
+          <div class="speed-control">
+            <label>速度:</label>
+            <input
+              type="range"
+              id="speedSlider"
+              min="500"
+              max="3000"
+              value="1500"
+            />
+            <span id="speedValue">1500ms</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-layout">
+        <div class="animation-section">
+          <div class="section-title">动画演示</div>
+          <div class="status" id="status">点击"开始演示"查看BFS求解过程</div>
+          <div class="board-container">
+            <div class="board" id="board"></div>
+            <div class="step-info" id="stepInfo">初始状态</div>
+          </div>
+          <div class="path-display" id="pathDisplay" style="display: none">
+            <div class="path-title">
+              解路径（共 <span id="totalSteps">0</span> 步）
+            </div>
+            <div class="path-steps" id="pathSteps"></div>
+          </div>
+        </div>
+
+        <div class="code-section">
+          <div class="section-title">Java代码</div>
+          <div class="code-container" id="codeContainer"></div>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-title">算法原理小结</div>
+        <div class="summary-content">
+          <h4>BFS核心思想</h4>
+          <p>
+            广度优先搜索采用<strong>层次遍历</strong>策略，保证找到最短路径：
+          </p>
+          <ul>
+            <li><strong>队列存储</strong>：待扩展状态按层次顺序处理</li>
+            <li><strong>层次遍历</strong>：先访问距离初始状态近的状态</li>
+            <li><strong>首次到达</strong>：首次到达目标状态即为最短路径</li>
+            <li><strong>路径重建</strong>：通过parent映射回溯完整路径</li>
+          </ul>
+
+          <h4>棋子移动规则</h4>
+          <p>
+            每次移动相邻两个棋子到空位，必须跳过至少一个棋子。目标是将白黑棋子交替排列。
+          </p>
+
+          <h4>时间复杂度</h4>
+          <span class="complexity-box">时间: O(n³)</span>
+          <span class="complexity-box">空间: O(n³)</span>
+
+          <h4>关键优势</h4>
+          <ul>
+            <li>保证找到最短路径（DFS可能找到96步，BFS找到5步）</li>
+            <li>适合状态空间搜索问题</li>
+            <li>可扩展到双向BFS、A*等优化算法</li>
+          </ul>
+        </div>
+      </div>
+
+      <a href="index.html" class="back-link">← 返回主页</a>
+    </div>
+
+    <script>
+      const javaCode = [
+        {
+          line: 1,
+          content:
+            '<span class="keyword">public</span> List&lt;<span class="type">String</span>&gt; <span class="method">solve</span>() {',
+          highlight: false,
+        },
+        {
+          line: 2,
+          content:
+            '    <span class="type">Queue</span>&lt;<span class="type">String</span>&gt; queue = <span class="keyword">new</span> <span class="type">LinkedList</span>&lt;&gt;();',
+          highlight: false,
+        },
+        {
+          line: 3,
+          content:
+            '    <span class="type">Map</span>&lt;<span class="type">String</span>, <span class="type">String</span>&gt; parent = <span class="keyword">new</span> <span class="type">HashMap</span>&lt;&gt;();',
+          highlight: false,
+        },
+        { line: 4, content: "", highlight: false },
+        {
+          line: 5,
+          content: '    queue.<span class="method">offer</span>(initialState);',
+          highlight: false,
+        },
+        {
+          line: 6,
+          content:
+            '    parent.<span class="method">put</span>(initialState, <span class="keyword">null</span>);',
+          highlight: false,
+        },
+        { line: 7, content: "", highlight: false },
+        {
+          line: 8,
+          content:
+            '    <span class="keyword">while</span> (!queue.<span class="method">isEmpty</span>()) {',
+          highlight: false,
+        },
+        {
+          line: 9,
+          content:
+            '        <span class="type">String</span> current = queue.<span class="method">poll</span>();',
+          highlight: false,
+        },
+        { line: 10, content: "", highlight: false },
+        {
+          line: 11,
+          content:
+            '        <span class="keyword">if</span> (current.<span class="method">equals</span>(targetState)) {',
+          highlight: false,
+        },
+        {
+          line: 12,
+          content:
+            '            <span class="keyword">return</span> <span class="method">reconstructPath</span>(parent, current);',
+          highlight: false,
+        },
+        { line: 13, content: "        }", highlight: false },
+        { line: 14, content: "", highlight: false },
+        {
+          line: 15,
+          content:
+            '        <span class="type">List</span>&lt;<span class="type">String</span>&gt; nextStates = <span class="method">getNextStates</span>(current);',
+          highlight: false,
+        },
+        {
+          line: 16,
+          content:
+            '        <span class="keyword">for</span> (<span class="type">String</span> next : nextStates) {',
+          highlight: false,
+        },
+        {
+          line: 17,
+          content:
+            '            <span class="keyword">if</span> (!parent.<span class="method">containsKey</span>(next)) {',
+          highlight: false,
+        },
+        {
+          line: 18,
+          content:
+            '                parent.<span class="method">put</span>(next, current);',
+          highlight: false,
+        },
+        {
+          line: 19,
+          content:
+            '                queue.<span class="method">offer</span>(next);',
+          highlight: false,
+        },
+        { line: 20, content: "            }", highlight: false },
+        { line: 21, content: "        }", highlight: false },
+        { line: 22, content: "    }", highlight: false },
+        {
+          line: 23,
+          content: '    <span class="keyword">return null</span>;',
+          highlight: false,
+        },
+        { line: 24, content: "}", highlight: false },
+      ];
+
+      const n = 4;
+      let initialState = "WWWWBBBB__";
+      let targetState = "__WBWBWBWB";
+      let solutionPath = [];
+      let currentStep = 0;
+      let isAnimating = false;
+      let animationTimer = null;
+
+      function initCodeDisplay() {
+        const container = document.getElementById("codeContainer");
+        container.innerHTML = javaCode
+          .map(
+            (line) =>
+              `<div class="code-line" id="line-${line.line}">
+                    <span class="line-number">${line.line}</span>
+                    <span class="line-content">${line.content}</span>
+                </div>`,
+          )
+          .join("");
+      }
+
+      function highlightCodeLines(lines) {
+        javaCode.forEach((lineObj) => {
+          const lineEl = document.getElementById(`line-${lineObj.line}`);
+          if (lines.includes(lineObj.line)) {
+            lineEl.classList.add("highlight");
+          } else {
+            lineEl.classList.remove("highlight");
+          }
+        });
+      }
+
+      function initBoard() {
+        const board = document.getElementById("board");
+        board.innerHTML = "";
+        for (let i = 0; i < initialState.length; i++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.id = `cell-${i}`;
+          updateCell(cell, initialState[i]);
+          board.appendChild(cell);
+        }
+      }
+
+      function updateCell(cell, char) {
+        cell.className = "cell";
+        if (char === "W") {
+          cell.classList.add("white");
+          cell.textContent = "W";
+        } else if (char === "B") {
+          cell.classList.add("black");
+          cell.textContent = "B";
+        } else {
+          cell.classList.add("empty");
+          cell.textContent = "_";
+        }
+      }
+
+      function displayState(state, movingPositions = []) {
+        for (let i = 0; i < state.length; i++) {
+          const cell = document.getElementById(`cell-${i}`);
+          updateCell(cell, state[i]);
+          if (movingPositions.includes(i)) {
+            cell.classList.add("moving");
+          }
+        }
+      }
+
+      function solveBFS() {
+        const queue = [initialState];
+        const parent = { [initialState]: null };
+        const visited = new Set([initialState]);
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+
+          if (current === targetState) {
+            const path = [];
+            let state = current;
+            while (state !== null) {
+              path.unshift(state);
+              state = parent[state];
+            }
+            return path;
+          }
+
+          const emptyPos = current.indexOf("_");
+          for (let i = 0; i < current.length - 1; i++) {
+            if (current[i] !== "_" && current[i + 1] !== "_") {
+              const minPos = Math.min(i, emptyPos);
+              const maxPos = Math.max(i, emptyPos);
+              let hasJump = false;
+              for (let j = minPos + 1; j < maxPos; j++) {
+                if (current[j] !== "_") {
+                  hasJump = true;
+                  break;
+                }
+              }
+
+              if (hasJump) {
+                const chars = current.split("");
+                const c1 = chars[i];
+                const c2 = chars[i + 1];
+                chars[i] = "_";
+                chars[i + 1] = "_";
+                chars[emptyPos] = c1;
+                chars[emptyPos + 1] = c2;
+                const newState = chars.join("");
+
+                if (!visited.has(newState)) {
+                  visited.add(newState);
+                  parent[newState] = current;
+                  queue.push(newState);
+                }
+              }
+            }
+          }
+        }
+
+        return null;
+      }
+
+      function findMovePositions(prev, curr) {
+        const from = [];
+        const to = [];
+        for (let i = 0; i < prev.length; i++) {
+          if (prev[i] !== "_" && curr[i] === "_") {
+            from.push(i, i + 1);
+          }
+          if (prev[i] === "_" && curr[i] !== "_") {
+            to.push(i, i + 1);
+          }
+        }
+        return { from, to };
+      }
+
+      function generateAnimationSteps() {
+        solutionPath = solveBFS();
+        if (!solutionPath) {
+          document.getElementById("status").textContent = "无解！";
+          return;
+        }
+
+        document.getElementById("pathDisplay").style.display = "block";
+        document.getElementById("totalSteps").textContent =
+          solutionPath.length - 1;
+
+        const pathSteps = document.getElementById("pathSteps");
+        pathSteps.innerHTML = solutionPath
+          .map(
+            (state, idx) =>
+              `<div class="path-step" id="path-step-${idx}">步骤${idx}</div>`,
+          )
+          .join("");
+      }
+
+      function showStep(stepIndex) {
+        if (stepIndex >= solutionPath.length) {
+          isAnimating = false;
+          document.getElementById("status").textContent = "求解完成！";
+          highlightCodeLines([]);
+          return;
+        }
+
+        const state = solutionPath[stepIndex];
+        const prevState = stepIndex > 0 ? solutionPath[stepIndex - 1] : null;
+
+        let movingPositions = [];
+        let stepInfo = "";
+
+        if (prevState) {
+          const move = findMovePositions(prevState, state);
+          movingPositions = move.to;
+          stepInfo = `移动位置 [${move.from[0]},${move.from[1]}] → [${move.to[0]},${move.to[1]}]`;
+        } else {
+          stepInfo = "初始状态";
+        }
+
+        displayState(state, movingPositions);
+        document.getElementById("stepInfo").textContent = stepInfo;
+        document.getElementById("status").textContent =
+          `步骤 ${stepIndex}/${solutionPath.length - 1}`;
+
+        for (let i = 0; i < solutionPath.length; i++) {
+          const stepEl = document.getElementById(`path-step-${i}`);
+          if (stepEl) {
+            stepEl.className = "path-step";
+            if (i === stepIndex) {
+              stepEl.classList.add("current");
+            }
+          }
+        }
+
+        if (stepIndex === 0) {
+          highlightCodeLines([1, 2, 3, 5, 6]);
+        } else if (stepIndex < solutionPath.length - 1) {
+          highlightCodeLines([8, 9, 15, 16, 17, 18, 19]);
+        } else {
+          highlightCodeLines([11, 12]);
+        }
+      }
+
+      function startAnimation() {
+        if (isAnimating) {
+          isAnimating = false;
+          clearTimeout(animationTimer);
+          return;
+        }
+
+        if (solutionPath.length === 0) {
+          generateAnimationSteps();
+        }
+
+        if (currentStep >= solutionPath.length) {
+          resetAnimation();
+          generateAnimationSteps();
+        }
+
+        isAnimating = true;
+        animate();
+      }
+
+      function animate() {
+        if (!isAnimating || currentStep >= solutionPath.length) {
+          isAnimating = false;
+          return;
+        }
+
+        showStep(currentStep);
+        currentStep++;
+
+        const speed = document.getElementById("speedSlider").value;
+        animationTimer = setTimeout(animate, parseInt(speed));
+      }
+
+      function prevStep() {
+        if (solutionPath.length === 0) {
+          generateAnimationSteps();
+        }
+
+        if (currentStep > 0) {
+          currentStep--;
+          showStep(currentStep);
+        }
+      }
+
+      function nextStep() {
+        if (solutionPath.length === 0) {
+          generateAnimationSteps();
+        }
+
+        if (currentStep < solutionPath.length) {
+          showStep(currentStep);
+          currentStep++;
+        }
+      }
+
+      function stepAnimation() {
+        nextStep();
+      }
+
+      function updateSpeedDisplay() {
+        const slider = document.getElementById("speedSlider");
+        const display = document.getElementById("speedValue");
+        display.textContent = slider.value + "ms";
+      }
+
+      function resetAnimation() {
+        isAnimating = false;
+        clearTimeout(animationTimer);
+        currentStep = 0;
+        solutionPath = [];
+        document.getElementById("pathDisplay").style.display = "none";
+        document.getElementById("status").textContent =
+          '点击"开始演示"查看BFS求解过程';
+        document.getElementById("stepInfo").textContent = "初始状态";
+        highlightCodeLines([]);
+        initBoard();
+      }
+
+      document
+        .getElementById("speedSlider")
+        .addEventListener("input", updateSpeedDisplay);
+      initCodeDisplay();
+      initBoard();
+    </script>
+  </body>
+</html>

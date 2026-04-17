@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实验一：整数集合分解 - 快速排序动画</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+      .section-title {
+        border-bottom: 2px solid #667eea;
+      }
+      .summary-section {
+        border-left: 5px solid #667eea;
+      }
+      .array-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 5px;
+        margin: 20px 0;
+        min-height: 150px;
+        padding: 15px;
+        background: #f5f5f5;
+        border-radius: 10px;
+      }
+      .bar {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: all 0.3s ease;
+      }
+      .bar-value {
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 16px;
+        color: white;
+        background: #3498db;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .bar.pivot .bar-value {
+        background: #e74c3c;
+      }
+      .bar.comparing .bar-value {
+        background: #f39c12;
+      }
+      .bar.sorted .bar-value {
+        background: #2ecc71;
+      }
+      .bar.swapping .bar-value {
+        background: #9b59b6;
+      }
+      .bar-index {
+        margin-top: 5px;
+        font-size: 11px;
+        color: #666;
+      }
+      .result-container {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 20px;
+        flex-wrap: wrap;
+      }
+      .result-box {
+        flex: 1;
+        min-width: 150px;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+      }
+      .smaller-set {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      }
+      .larger-set {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      }
+      .result-box h3 {
+        margin-bottom: 10px;
+        color: #333;
+        font-size: 16px;
+      }
+      .result-values {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+      }
+      .result-value {
+        padding: 6px 12px;
+        background: white;
+        border-radius: 5px;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        font-size: 14px;
+      }
+      .sum-display {
+        margin-top: 10px;
+        font-size: 16px;
+        color: #333;
+      }
+    </style>
+    <script src="common.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>整数集合分解</h1>
+      <p class="subtitle">快速排序算法可视化演示</p>
+
+      <div class="controls">
+        <div class="control-row">
+          <button class="btn-prev" onclick="prevStep()">⬅ 上一步</button>
+          <button class="btn-start" onclick="startAnimation()">
+            ▶ 开始演示
+          </button>
+          <button class="btn-next" onclick="nextStep()">下一步 ➡</button>
+          <button class="btn-reset" onclick="resetAnimation()">🔄 重置</button>
+        </div>
+        <div class="control-row">
+          <div class="speed-control">
+            <label>速度:</label>
+            <input
+              type="range"
+              id="speedSlider"
+              min="500"
+              max="3000"
+              value="1200"
+            />
+            <span id="speedValue">1200ms</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-layout">
+        <div class="animation-section">
+          <div class="section-title">动画演示</div>
+          <div class="status" id="status">点击"开始演示"查看快速排序过程</div>
+          <div class="array-container" id="arrayContainer"></div>
+          <div
+            class="result-container"
+            id="resultContainer"
+            style="display: none"
+          >
+            <div class="result-box smaller-set">
+              <h3>较小子集</h3>
+              <div class="result-values" id="smallerSet"></div>
+              <div class="sum-display">和: <span id="smallerSum">0</span></div>
+            </div>
+            <div class="result-box larger-set">
+              <h3>较大子集</h3>
+              <div class="result-values" id="largerSet"></div>
+              <div class="sum-display">和: <span id="largerSum">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-section">
+          <div class="section-title">Java代码</div>
+          <div class="code-container" id="codeContainer"></div>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-title">算法原理小结</div>
+        <div class="summary-content">
+          <h4>快速排序核心思想</h4>
+          <p>
+            快速排序采用<strong>分治策略</strong>，通过选择一个基准元素将数组分成两部分：
+          </p>
+          <ul>
+            <li><strong>选择基准</strong>：通常选择最后一个元素作为基准</li>
+            <li>
+              <strong>分区操作</strong
+              >：将小于基准的元素移到左边，大于基准的移到右边
+            </li>
+            <li>
+              <strong>递归排序</strong>：对左右两个子数组分别递归执行快速排序
+            </li>
+          </ul>
+
+          <h4>集合分解策略</h4>
+          <p>
+            排序完成后，将数组从中间分成两部分，使得两个子集的元素个数相等，且和尽可能接近。
+          </p>
+
+          <h4>时间复杂度</h4>
+          <span class="complexity-box">平均: O(n log n)</span>
+          <span class="complexity-box">最坏: O(n²)</span>
+          <span class="complexity-box">空间: O(log n)</span>
+
+          <h4>关键优势</h4>
+          <ul>
+            <li>平均情况下效率极高，是实践中最快的排序算法之一</li>
+            <li>原地排序，不需要额外空间</li>
+            <li>适合大规模数据排序</li>
+          </ul>
+        </div>
+      </div>
+
+      <a href="index.html" class="back-link">← 返回主页</a>
+    </div>
+
+    <script>
+      const javaCode = [
+        {
+          line: 1,
+          content:
+            '<span class="keyword">private static int</span> <span class="method">partition</span>(<span class="type">int[]</span> arr, <span class="type">int</span> low, <span class="type">int</span> high) {',
+          highlight: false,
+        },
+        {
+          line: 2,
+          content: '    <span class="type">int</span> pivot = arr[high];',
+          highlight: false,
+        },
+        {
+          line: 3,
+          content:
+            '    <span class="type">int</span> i = low - <span class="number">1</span>;',
+          highlight: false,
+        },
+        { line: 4, content: "", highlight: false },
+        {
+          line: 5,
+          content:
+            '    <span class="keyword">for</span> (<span class="type">int</span> j = low; j < high; j++) {',
+          highlight: false,
+        },
+        {
+          line: 6,
+          content:
+            '        <span class="keyword">if</span> (arr[j] <= pivot) {',
+          highlight: false,
+        },
+        { line: 7, content: "            i++;", highlight: false },
+        {
+          line: 8,
+          content: '            <span class="method">swap</span>(arr, i, j);',
+          highlight: false,
+        },
+        { line: 9, content: "        }", highlight: false },
+        { line: 10, content: "    }", highlight: false },
+        { line: 11, content: "", highlight: false },
+        {
+          line: 12,
+          content:
+            '    <span class="method">swap</span>(arr, i + <span class="number">1</span>, high);',
+          highlight: false,
+        },
+        {
+          line: 13,
+          content:
+            '    <span class="keyword">return</span> i + <span class="number">1</span>;',
+          highlight: false,
+        },
+        { line: 14, content: "}", highlight: false },
+        { line: 15, content: "", highlight: false },
+        {
+          line: 16,
+          content:
+            '<span class="keyword">private static void</span> <span class="method">swap</span>(<span class="type">int[]</span> arr, <span class="type">int</span> i, <span class="type">int</span> j) {',
+          highlight: false,
+        },
+        {
+          line: 17,
+          content: '    <span class="keyword">if</span> (i != j) {',
+          highlight: false,
+        },
+        {
+          line: 18,
+          content: '        <span class="type">int</span> temp = arr[i];',
+          highlight: false,
+        },
+        { line: 19, content: "        arr[i] = arr[j];", highlight: false },
+        { line: 20, content: "        arr[j] = temp;", highlight: false },
+        { line: 21, content: "    }", highlight: false },
+        { line: 22, content: "}", highlight: false },
+      ];
+
+      let originalArray = [8, 3, 6, 4, 2, 9, 1, 5, 7, 0];
+      let array = [...originalArray];
+      let animationSteps = [];
+      let currentStep = 0;
+      let isAnimating = false;
+      let animationTimer = null;
+
+      function initCodeDisplay() {
+        const container = document.getElementById("codeContainer");
+        container.innerHTML = javaCode
+          .map(
+            (line) =>
+              `<div class="code-line" id="line-${line.line}">
+                    <span class="line-number">${line.line}</span>
+                    <span class="line-content">${line.content}</span>
+                </div>`,
+          )
+          .join("");
+      }
+
+      function highlightCodeLines(lines) {
+        javaCode.forEach((lineObj) => {
+          const lineEl = document.getElementById(`line-${lineObj.line}`);
+          if (lines.includes(lineObj.line)) {
+            lineEl.classList.add("highlight");
+          } else {
+            lineEl.classList.remove("highlight");
+          }
+        });
+      }
+
+      function initArray() {
+        const container = document.getElementById("arrayContainer");
+        container.innerHTML = "";
+        array.forEach((value, index) => {
+          const bar = document.createElement("div");
+          bar.className = "bar";
+          bar.innerHTML = `
+                    <div class="bar-value" id="bar-${index}">${value}</div>
+                    <div class="bar-index">${index}</div>
+                `;
+          container.appendChild(bar);
+        });
+      }
+
+      function updateDisplay(highlights = {}) {
+        array.forEach((value, index) => {
+          const bar = document.getElementById(`bar-${index}`);
+          bar.textContent = value;
+          bar.parentElement.className = "bar";
+
+          if (highlights.pivot === index) {
+            bar.parentElement.classList.add("pivot");
+          } else if (
+            highlights.comparing &&
+            highlights.comparing.includes(index)
+          ) {
+            bar.parentElement.classList.add("comparing");
+          } else if (highlights.sorted && highlights.sorted.includes(index)) {
+            bar.parentElement.classList.add("sorted");
+          } else if (
+            highlights.swapping &&
+            highlights.swapping.includes(index)
+          ) {
+            bar.parentElement.classList.add("swapping");
+          }
+        });
+      }
+
+      function generateAnimationSteps() {
+        animationSteps = [];
+        let arr = [...originalArray];
+
+        animationSteps.push({
+          type: "init",
+          array: [...arr],
+          message: "初始数组",
+          codeLines: [],
+        });
+
+        quickSortSteps(arr, 0, arr.length - 1);
+
+        animationSteps.push({
+          type: "done",
+          array: [...arr],
+          message: "排序完成！",
+          codeLines: [],
+        });
+
+        const half = Math.floor(arr.length / 2);
+        const smaller = arr.slice(0, half);
+        const larger = arr.slice(half);
+
+        animationSteps.push({
+          type: "partition",
+          array: [...arr],
+          smaller: smaller,
+          larger: larger,
+          message: `分割完成！较小子集: [${smaller.join(", ")}], 较大子集: [${larger.join(", ")}]`,
+          codeLines: [],
+        });
+      }
+
+      function quickSortSteps(arr, low, high) {
+        if (low < high) {
+          const pivotIndex = partitionSteps(arr, low, high);
+          quickSortSteps(arr, low, pivotIndex - 1);
+          quickSortSteps(arr, pivotIndex + 1, high);
+        }
+      }
+
+      function partitionSteps(arr, low, high) {
+        animationSteps.push({
+          type: "pivot",
+          array: [...arr],
+          pivot: high,
+          message: `选择基准元素: arr[${high}] = ${arr[high]}`,
+          codeLines: [2],
+        });
+
+        let i = low - 1;
+        animationSteps.push({
+          type: "init_i",
+          array: [...arr],
+          pivot: high,
+          message: `初始化 i = ${low} - 1 = ${i}`,
+          codeLines: [3],
+        });
+
+        for (let j = low; j < high; j++) {
+          animationSteps.push({
+            type: "loop",
+            array: [...arr],
+            pivot: high,
+            comparing: [j],
+            message: `循环: j = ${j}`,
+            codeLines: [5],
+          });
+
+          animationSteps.push({
+            type: "compare",
+            array: [...arr],
+            pivot: high,
+            comparing: [j],
+            message: `比较 arr[${j}]=${arr[j]} 与基准 ${arr[high]}`,
+            codeLines: [6],
+          });
+
+          if (arr[j] <= arr[high]) {
+            i++;
+            animationSteps.push({
+              type: "increment_i",
+              array: [...arr],
+              pivot: high,
+              comparing: [j],
+              message: `arr[${j}] <= pivot, i++ => i = ${i}`,
+              codeLines: [7],
+            });
+
+            if (i !== j) {
+              [arr[i], arr[j]] = [arr[j], arr[i]];
+              animationSteps.push({
+                type: "swap",
+                array: [...arr],
+                swapping: [i, j],
+                message: `交换 arr[${i}]=${arr[i]} 和 arr[${j}]=${arr[j]}`,
+                codeLines: [8, 16, 17, 18, 19, 20, 21, 22],
+              });
+            }
+          }
+        }
+
+        [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+        animationSteps.push({
+          type: "final_swap",
+          array: [...arr],
+          swapping: [i + 1, high],
+          message: `将基准元素放到正确位置: arr[${i + 1}]`,
+          codeLines: [12, 16, 17, 18, 19, 20, 21, 22],
+        });
+
+        animationSteps.push({
+          type: "return",
+          array: [...arr],
+          message: `返回基准位置: ${i + 1}`,
+          codeLines: [13],
+        });
+
+        return i + 1;
+      }
+
+      function showStep(step) {
+        const statusEl = document.getElementById("status");
+        statusEl.textContent = step.message;
+
+        array = [...step.array];
+
+        const highlights = {};
+        if (step.pivot !== undefined) highlights.pivot = step.pivot;
+        if (step.comparing) highlights.comparing = step.comparing;
+        if (step.swapping) highlights.swapping = step.swapping;
+
+        updateDisplay(highlights);
+        highlightCodeLines(step.codeLines || []);
+
+        if (step.type === "partition") {
+          document.getElementById("resultContainer").style.display = "flex";
+          document.getElementById("smallerSet").innerHTML = step.smaller
+            .map((v) => `<span class="result-value">${v}</span>`)
+            .join("");
+          document.getElementById("largerSet").innerHTML = step.larger
+            .map((v) => `<span class="result-value">${v}</span>`)
+            .join("");
+
+          const smallerSum = step.smaller.reduce((a, b) => a + b, 0);
+          const largerSum = step.larger.reduce((a, b) => a + b, 0);
+          document.getElementById("smallerSum").textContent = smallerSum;
+          document.getElementById("largerSum").textContent = largerSum;
+        }
+      }
+
+      function startAnimation() {
+        if (isAnimating) {
+          isAnimating = false;
+          clearTimeout(animationTimer);
+          return;
+        }
+
+        if (currentStep === 0 || currentStep >= animationSteps.length) {
+          resetAnimation();
+          generateAnimationSteps();
+        }
+
+        isAnimating = true;
+        animate();
+      }
+
+      function animate() {
+        if (!isAnimating || currentStep >= animationSteps.length) {
+          isAnimating = false;
+          return;
+        }
+
+        showStep(animationSteps[currentStep]);
+        currentStep++;
+
+        const speed = document.getElementById("speedSlider").value;
+        animationTimer = setTimeout(animate, parseInt(speed));
+      }
+
+      function prevStep() {
+        if (animationSteps.length === 0) {
+          generateAnimationSteps();
+        }
+
+        if (currentStep > 0) {
+          currentStep--;
+          showStep(animationSteps[currentStep]);
+        }
+      }
+
+      function nextStep() {
+        if (animationSteps.length === 0) {
+          generateAnimationSteps();
+        }
+
+        if (currentStep < animationSteps.length) {
+          showStep(animationSteps[currentStep]);
+          currentStep++;
+        }
+      }
+
+      function stepAnimation() {
+        nextStep();
+      }
+
+      function updateSpeedDisplay() {
+        const slider = document.getElementById("speedSlider");
+        const display = document.getElementById("speedValue");
+        display.textContent = slider.value + "ms";
+      }
+
+      function resetAnimation() {
+        isAnimating = false;
+        clearTimeout(animationTimer);
+        currentStep = 0;
+        array = [...originalArray];
+        animationSteps = [];
+        document.getElementById("resultContainer").style.display = "none";
+        document.getElementById("status").textContent =
+          '点击"开始演示"查看快速排序过程';
+        highlightCodeLines([]);
+        initArray();
+      }
+
+      document
+        .getElementById("speedSlider")
+        .addEventListener("input", updateSpeedDisplay);
+      initCodeDisplay();
+      initArray();
+    </script>
+  </body>
+</html>

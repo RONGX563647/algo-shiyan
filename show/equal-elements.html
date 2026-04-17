@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实验一：相等元素检测 - 哈希表动画</title>
+    <link rel="stylesheet" href="common.css" />
+    <style>
+      body {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      }
+      .section-title {
+        border-bottom: 2px solid #11998e;
+      }
+      .summary-section {
+        border-left: 5px solid #11998e;
+      }
+      .status {
+        text-align: center;
+        padding: 12px;
+        background: #e8f5e9;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-weight: bold;
+        color: #2e7d32;
+        font-size: 14px;
+      }
+      .status.found {
+        background: #fff3e0;
+        color: #e65100;
+      }
+      .animation-content {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+      .array-section {
+        flex: 1;
+        min-width: 200px;
+      }
+      .hash-section {
+        flex: 1;
+        min-width: 250px;
+      }
+      .sub-section-title {
+        font-size: 14px;
+        font-weight: bold;
+        color: #555;
+        margin-bottom: 10px;
+      }
+      .array-display {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 15px;
+        background: #f5f5f5;
+        border-radius: 10px;
+      }
+      .array-item {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #3498db;
+        color: white;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 16px;
+        transition: all 0.3s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .array-item.current {
+        background: #e74c3c;
+        transform: scale(1.1);
+      }
+      .array-item.checked {
+        background: #95a5a6;
+      }
+      .array-item.duplicate {
+        background: #f39c12;
+        animation: pulse 0.5s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+      }
+      .hash-table {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        padding: 15px;
+        background: #f5f5f5;
+        border-radius: 10px;
+      }
+      .hash-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .hash-index {
+        width: 30px;
+        text-align: right;
+        font-weight: bold;
+        color: #666;
+        font-size: 12px;
+      }
+      .hash-bucket {
+        flex: 1;
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        background: white;
+        border-radius: 5px;
+        border: 2px solid #ddd;
+        transition: all 0.3s;
+      }
+      .hash-bucket.active {
+        border-color: #e74c3c;
+        background: #fff5f5;
+      }
+      .hash-node {
+        padding: 4px 10px;
+        background: #3498db;
+        color: white;
+        border-radius: 5px;
+        font-weight: bold;
+        font-size: 12px;
+        animation: fadeIn 0.3s ease;
+      }
+      .hash-node.duplicate {
+        background: #f39c12;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .arrow {
+        color: #999;
+        font-size: 16px;
+      }
+      .result-box {
+        margin-top: 15px;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+      }
+      .result-box.yes {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+      }
+      .result-box.no {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+      }
+    </style>
+    <script src="common.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>相等元素检测</h1>
+      <p class="subtitle">哈希表冲突检测可视化演示</p>
+
+      <div class="controls">
+        <div class="control-row">
+          <button class="btn-prev" onclick="prevStep()">⬅ 上一步</button>
+          <button class="btn-start" onclick="startAnimation()">
+            ▶ 开始演示
+          </button>
+          <button class="btn-next" onclick="nextStep()">下一步 ➡</button>
+          <button class="btn-reset" onclick="resetAnimation()">🔄 重置</button>
+        </div>
+        <div class="control-row">
+          <div class="speed-control">
+            <label>速度:</label>
+            <input
+              type="range"
+              id="speedSlider"
+              min="500"
+              max="3000"
+              value="1500"
+            />
+            <span id="speedValue">1500ms</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-layout">
+        <div class="animation-section">
+          <div class="section-title">动画演示</div>
+          <div class="status" id="status">点击"开始演示"查看哈希检测过程</div>
+          <div class="animation-content">
+            <div class="array-section">
+              <div class="sub-section-title">待检测数组</div>
+              <div class="array-display" id="arrayDisplay"></div>
+            </div>
+            <div class="hash-section">
+              <div class="sub-section-title">哈希表状态</div>
+              <div class="hash-table" id="hashTable"></div>
+            </div>
+          </div>
+          <div class="result-box" id="resultBox" style="display: none"></div>
+        </div>
+
+        <div class="code-section">
+          <div class="section-title">Java代码</div>
+          <div class="code-container" id="codeContainer"></div>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <div class="summary-title">算法原理小结</div>
+        <div class="summary-content">
+          <h4>哈希表核心思想</h4>
+          <p>
+            哈希表通过<strong>哈希函数</strong>将元素映射到固定大小的数组中，实现快速查找：
+          </p>
+          <ul>
+            <li>
+              <strong>哈希函数</strong>：hash(x) = |x| %
+              capacity，将任意整数映射到固定范围
+            </li>
+            <li>
+              <strong>链地址法</strong
+              >：每个桶存储一个链表，冲突元素链接在同一桶中
+            </li>
+            <li><strong>查找过程</strong>：计算哈希值→定位桶→遍历链表查找</li>
+          </ul>
+
+          <h4>重复检测原理</h4>
+          <p>
+            遍历数组，将每个元素插入哈希表。插入前先检查桶中是否已存在相同元素，若存在则发现重复。
+          </p>
+
+          <h4>时间复杂度</h4>
+          <span class="complexity-box">平均: O(n)</span>
+          <span class="complexity-box">最坏: O(n²)</span>
+          <span class="complexity-box">空间: O(n)</span>
+
+          <h4>关键优势</h4>
+          <ul>
+            <li>平均情况下查找和插入都是O(1)，效率极高</li>
+            <li>链地址法简单有效，适合处理冲突</li>
+            <li>适合大规模数据的重复检测</li>
+          </ul>
+        </div>
+      </div>
+
+      <a href="index.html" class="back-link">← 返回主页</a>
+    </div>
+
+    <script>
+      const javaCode = [
+        {
+          line: 1,
+          content:
+            '<span class="keyword">public static boolean</span> <span class="method">hasDuplicate</span>(<span class="type">int[]</span> arr) {',
+          highlight: false,
+        },
+        {
+          line: 2,
+          content:
+            '    MyHashSet set = <span class="keyword">new</span> <span class="type">MyHashSet</span>(arr.length * <span class="number">2</span>);',
+          highlight: false,
+        },
+        { line: 3, content: "", highlight: false },
+        {
+          line: 4,
+          content:
+            '    <span class="keyword">for</span> (<span class="type">int</span> num : arr) {',
+          highlight: false,
+        },
+        {
+          line: 5,
+          content:
+            '        <span class="keyword">if</span> (!set.<span class="method">add</span>(num)) {',
+          highlight: false,
+        },
+        {
+          line: 6,
+          content:
+            '            <span class="keyword">return true</span>;  <span class="comment">// 发现重复</span>',
+          highlight: false,
+        },
+        { line: 7, content: "        }", highlight: false },
+        { line: 8, content: "    }", highlight: false },
+        {
+          line: 9,
+          content:
+            '    <span class="keyword">return false</span>;  <span class="comment">// 无重复</span>',
+          highlight: false,
+        },
+        { line: 10, content: "}", highlight: false },
+        { line: 11, content: "", highlight: false },
+        {
+          line: 12,
+          content:
+            '<span class="keyword">static class</span> <span class="type">MyHashSet</span> {',
+          highlight: false,
+        },
+        {
+          line: 13,
+          content:
+            '    <span class="keyword">private</span> <span class="type">Node[]</span> table;',
+          highlight: false,
+        },
+        {
+          line: 14,
+          content: '    <span class="keyword">private int</span> capacity;',
+          highlight: false,
+        },
+        { line: 15, content: "", highlight: false },
+        {
+          line: 16,
+          content:
+            '    <span class="keyword">private int</span> <span class="method">hash</span>(<span class="type">int</span> value) {',
+          highlight: false,
+        },
+        {
+          line: 17,
+          content:
+            '        <span class="keyword">return</span> Math.<span class="method">abs</span>(value) % capacity;',
+          highlight: false,
+        },
+        { line: 18, content: "    }", highlight: false },
+        { line: 19, content: "", highlight: false },
+        {
+          line: 20,
+          content:
+            '    <span class="keyword">public boolean</span> <span class="method">add</span>(<span class="type">int</span> value) {',
+          highlight: false,
+        },
+        {
+          line: 21,
+          content:
+            '        <span class="type">int</span> index = <span class="method">hash</span>(value);',
+          highlight: false,
+        },
+        { line: 22, content: "", highlight: false },
+        {
+          line: 23,
+          content:
+            '        <span class="type">Node</span> current = table[index];',
+          highlight: false,
+        },
+        {
+          line: 24,
+          content:
+            '        <span class="keyword">while</span> (current != <span class="keyword">null</span>) {',
+          highlight: false,
+        },
+        {
+          line: 25,
+          content:
+            '            <span class="keyword">if</span> (current.value == value) {',
+          highlight: false,
+        },
+        {
+          line: 26,
+          content:
+            '                <span class="keyword">return false</span>;  <span class="comment">// 已存在</span>',
+          highlight: false,
+        },
+        { line: 27, content: "            }", highlight: false },
+        {
+          line: 28,
+          content: "            current = current.next;",
+          highlight: false,
+        },
+        { line: 29, content: "        }", highlight: false },
+        { line: 30, content: "", highlight: false },
+        {
+          line: 31,
+          content:
+            '        <span class="type">Node</span> newNode = <span class="keyword">new</span> <span class="type">Node</span>(value);',
+          highlight: false,
+        },
+        {
+          line: 32,
+          content: "        newNode.next = table[index];",
+          highlight: false,
+        },
+        {
+          line: 33,
+          content: "        table[index] = newNode;",
+          highlight: false,
+        },
+        {
+          line: 34,
+          content:
+            '        <span class="keyword">return true</span>;  <span class="comment">// 插入成功</span>',
+          highlight: false,
+        },
+        { line: 35, content: "    }", highlight: false },
+        { line: 36, content: "}", highlight: false },
+      ];
+
+      const originalArray = [15, 8, 23, 8, 42, 16, 15, 7];
+      let array = [...originalArray];
+      let hashTable = [];
+      let animationSteps = [];
+      let currentStep = 0;
+      let isAnimating = false;
+      let animationTimer = null;
+      const TABLE_SIZE = 8;
+
+      function initCodeDisplay() {
+        const container = document.getElementById("codeContainer");
+        container.innerHTML = javaCode
+          .map(
+            (line) =>
+              `<div class="code-line" id="line-${line.line}">
+                    <span class="line-number">${line.line}</span>
+                    <span class="line-content">${line.content}</span>
+                </div>`,
+          )
+          .join("");
+      }
+
+      function highlightCodeLines(lines) {
+        javaCode.forEach((lineObj) => {
+          const lineEl = document.getElementById(`line-${lineObj.line}`);
+          if (lines.includes(lineObj.line)) {
+            lineEl.classList.add("highlight");
+          } else {
+            lineEl.classList.remove("highlight");
+          }
+        });
+      }
+
+      function initDisplay() {
+        const arrayDisplay = document.getElementById("arrayDisplay");
+        arrayDisplay.innerHTML = "";
+        array.forEach((value, index) => {
+          const item = document.createElement("div");
+          item.className = "array-item";
+          item.id = `array-${index}`;
+          item.textContent = value;
+          arrayDisplay.appendChild(item);
+        });
+
+        const hashTableEl = document.getElementById("hashTable");
+        hashTableEl.innerHTML = "";
+        for (let i = 0; i < TABLE_SIZE; i++) {
+          const row = document.createElement("div");
+          row.className = "hash-row";
+          row.innerHTML = `
+                    <div class="hash-index">${i}</div>
+                    <div class="hash-bucket" id="bucket-${i}"></div>
+                `;
+          hashTableEl.appendChild(row);
+        }
+      }
+
+      function hash(value) {
+        return Math.abs(value) % TABLE_SIZE;
+      }
+
+      function generateAnimationSteps() {
+        animationSteps = [];
+        hashTable = Array(TABLE_SIZE)
+          .fill(null)
+          .map(() => []);
+
+        animationSteps.push({
+          type: "init",
+          message: "初始化：创建空的哈希表",
+          codeLines: [1, 2],
+        });
+
+        for (let i = 0; i < array.length; i++) {
+          const value = array[i];
+          const index = hash(value);
+          const bucket = hashTable[index];
+
+          animationSteps.push({
+            type: "loop",
+            arrayIndex: i,
+            value: value,
+            message: `遍历数组元素 arr[${i}] = ${value}`,
+            codeLines: [4],
+          });
+
+          animationSteps.push({
+            type: "hash",
+            arrayIndex: i,
+            value: value,
+            hashIndex: index,
+            message: `计算哈希值: hash(${value}) = ${index}`,
+            codeLines: [16, 17, 21],
+          });
+
+          animationSteps.push({
+            type: "check",
+            arrayIndex: i,
+            value: value,
+            hashIndex: index,
+            message: `检测元素 arr[${i}] = ${value}，哈希值 = ${index}`,
+            codeLines: [5, 20, 23],
+          });
+
+          let found = false;
+          for (let j = 0; j < bucket.length; j++) {
+            animationSteps.push({
+              type: "compare",
+              arrayIndex: i,
+              value: value,
+              hashIndex: index,
+              compareWith: bucket[j],
+              message: `在桶 ${index} 中比较 ${value} 与 ${bucket[j]}`,
+              codeLines: [24, 25],
+            });
+
+            if (bucket[j] === value) {
+              found = true;
+              animationSteps.push({
+                type: "duplicate",
+                arrayIndex: i,
+                value: value,
+                hashIndex: index,
+                message: `发现重复元素！${value} 已存在于哈希表中`,
+                codeLines: [6, 26],
+              });
+              break;
+            }
+
+            animationSteps.push({
+              type: "next_node",
+              arrayIndex: i,
+              value: value,
+              hashIndex: index,
+              message: `继续检查下一个节点`,
+              codeLines: [28],
+            });
+          }
+
+          if (found) {
+            break;
+          }
+
+          bucket.push(value);
+          animationSteps.push({
+            type: "insert",
+            arrayIndex: i,
+            value: value,
+            hashIndex: index,
+            message: `将 ${value} 插入到桶 ${index}`,
+            codeLines: [31, 32, 33, 34],
+          });
+        }
+
+        animationSteps.push({
+          type: "complete",
+          message: "检测完成：数组中没有重复元素",
+          codeLines: [9],
+        });
+      }
+
+      function updateHashTableDisplay(highlights = {}) {
+        for (let i = 0; i < TABLE_SIZE; i++) {
+          const bucket = document.getElementById(`bucket-${i}`);
+          bucket.className = "hash-bucket";
+          if (highlights.activeBucket === i) {
+            bucket.classList.add("active");
+          }
+
+          let html = "";
+          hashTable[i].forEach((val, idx) => {
+            const isDuplicate = highlights.duplicateValue === val;
+            html += `<span class="hash-node ${isDuplicate ? "duplicate" : ""}">${val}</span>`;
+            if (idx < hashTable[i].length - 1) {
+              html += '<span class="arrow">→</span>';
+            }
+          });
+          bucket.innerHTML = html;
+        }
+      }
+
+      function updateArrayDisplay(currentIndex, duplicateIndex = -1) {
+        array.forEach((value, index) => {
+          const item = document.getElementById(`array-${index}`);
+          item.className = "array-item";
+          if (index === currentIndex) {
+            item.classList.add("current");
+          } else if (index < currentIndex) {
+            item.classList.add("checked");
+          }
+          if (index === duplicateIndex) {
+            item.classList.add("duplicate");
+          }
+        });
+      }
+
+      function showStep(step) {
+        const statusEl = document.getElementById("status");
+        statusEl.textContent = step.message;
+        statusEl.className = "status";
+
+        highlightCodeLines(step.codeLines || []);
+
+        if (step.type === "init") {
+          updateArrayDisplay(-1);
+          updateHashTableDisplay();
+        } else if (step.type === "loop" || step.type === "hash") {
+          updateArrayDisplay(step.arrayIndex);
+          if (step.hashIndex !== undefined) {
+            updateHashTableDisplay({ activeBucket: step.hashIndex });
+          }
+        } else if (step.type === "check") {
+          updateArrayDisplay(step.arrayIndex);
+          updateHashTableDisplay({ activeBucket: step.hashIndex });
+        } else if (step.type === "compare" || step.type === "next_node") {
+          updateArrayDisplay(step.arrayIndex);
+          updateHashTableDisplay({ activeBucket: step.hashIndex });
+        } else if (step.type === "insert") {
+          hashTable[step.hashIndex].push(step.value);
+          updateArrayDisplay(step.arrayIndex);
+          updateHashTableDisplay({ activeBucket: step.hashIndex });
+        } else if (step.type === "duplicate") {
+          statusEl.classList.add("found");
+          const duplicateIndex = array.findIndex(
+            (v, i) => v === step.value && i < step.arrayIndex,
+          );
+          updateArrayDisplay(step.arrayIndex, duplicateIndex);
+          updateHashTableDisplay({
+            activeBucket: step.hashIndex,
+            duplicateValue: step.value,
+          });
+
+          const resultBox = document.getElementById("resultBox");
+          resultBox.style.display = "block";
+          resultBox.className = "result-box yes";
+          resultBox.textContent = `发现重复元素: ${step.value}`;
+        } else if (step.type === "complete") {
+          updateArrayDisplay(array.length);
+          updateHashTableDisplay();
+
+          const resultBox = document.getElementById("resultBox");
+          resultBox.style.display = "block";
+          resultBox.className = "result-box no";
+          resultBox.textContent = "没有发现重复元素";
+        }
+      }
+
+      function startAnimation() {
+        if (isAnimating) {
+          isAnimating = false;
+          clearTimeout(animationTimer);
+          return;
+        }
+
+        if (currentStep === 0 || currentStep >= animationSteps.length) {
+          resetAnimation();
+          generateAnimationSteps();
+        }
+
+        isAnimating = true;
+        animate();
+      }
+
+      function animate() {
+        if (!isAnimating || currentStep >= animationSteps.length) {
+          isAnimating = false;
+          return;
+        }
+
+        showStep(animationSteps[currentStep]);
+        currentStep++;
+
+        const speed = document.getElementById("speedSlider").value;
+        animationTimer = setTimeout(animate, parseInt(speed));
+      }
+
+      function prevStep() {
+        if (animationSteps.length === 0) {
+          generateAnimationSteps();
+        }
+
+        if (currentStep > 0) {
+          currentStep--;
+          showStep(animationSteps[currentStep]);
+        }
+      }
+
+      function nextStep() {
+        if (animationSteps.length === 0) {
+          generateAnimationSteps();
+        }
+
+        if (currentStep < animationSteps.length) {
+          showStep(animationSteps[currentStep]);
+          currentStep++;
+        }
+      }
+
+      function stepAnimation() {
+        nextStep();
+      }
+
+      function updateSpeedDisplay() {
+        const slider = document.getElementById("speedSlider");
+        const display = document.getElementById("speedValue");
+        display.textContent = slider.value + "ms";
+      }
+
+      function resetAnimation() {
+        isAnimating = false;
+        clearTimeout(animationTimer);
+        currentStep = 0;
+        hashTable = Array(TABLE_SIZE)
+          .fill(null)
+          .map(() => []);
+        animationSteps = [];
+        document.getElementById("resultBox").style.display = "none";
+        document.getElementById("status").textContent =
+          '点击"开始演示"查看哈希检测过程';
+        document.getElementById("status").className = "status";
+        highlightCodeLines([]);
+        initDisplay();
+      }
+
+      document
+        .getElementById("speedSlider")
+        .addEventListener("input", updateSpeedDisplay);
+      initCodeDisplay();
+      initDisplay();
+    </script>
+  </body>
+</html>
